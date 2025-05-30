@@ -49,7 +49,7 @@ Texto original:
 {texto_original}
 """
     body = {
-      "model": "openrouter/openai/gpt-3.5-turbo",
+        "model": "openrouter/openai/gpt-3.5-turbo",
         "messages": [
             {"role": "system", "content": "Eres un experto en QA y análisis funcional."},
             {"role": "user", "content": prompt}
@@ -79,7 +79,7 @@ Descripción funcional:
 {descripcion}
 """
     body = {
-        "model": "gpt-3.5-turbo",
+        "model": "openrouter/openai/gpt-3.5-turbo",  # ← CORREGIDO
         "messages": [
             {"role": "system", "content": "Eres un experto en QA y pruebas de software."},
             {"role": "user", "content": prompt}
@@ -196,7 +196,6 @@ if generar_clicked:
                 if filas_incompletas:
                     st.warning(f"⚠️ {len(filas_incompletas)} fila(s) tenían menos columnas de las esperadas y fueron completadas con espacios vacíos. Revísalas si es necesario.")
 
-                # Aquí agregamos manejo tolerante para el error al leer CSV con pandas:
                 try:
                     df = pd.read_csv(io.StringIO(csv_limpio), engine='python', on_bad_lines='warn')
                     st.success("✅ CSV generado correctamente:")
