@@ -5,7 +5,7 @@ import io
 import pandas as pd
 import time
 
-API_KEY = st.secrets[""OPENROUTER_API_KEY"]
+API_KEY = st.secrets["OPENROUTER_API_KEY"]
 
 TIPOS_VALIDOS = {"Functional", "Negative", "Performance", "Security", "Usability"}
 PRIORIDADES_VALIDAS = {"High", "Medium", "Low"}
