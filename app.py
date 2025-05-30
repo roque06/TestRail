@@ -5,7 +5,11 @@ import io
 import pandas as pd
 import time
 
+# Leer la API KEY desde secrets.toml
 API_KEY = st.secrets["OPENROUTER_API_KEY"]
+
+# Debug: muestra los primeros caracteres de la clave para confirmar que se lee bien
+st.write(f"API_KEY leído: {API_KEY[:6]}... (oculto por seguridad)")
 
 TIPOS_VALIDOS = {"Functional", "Negative", "Performance", "Security", "Usability"}
 PRIORIDADES_VALIDAS = {"High", "Medium", "Low"}
@@ -27,8 +31,14 @@ def llamar_api_con_reintentos(body, max_reintentos=3):
                 time.sleep(1)
                 continue
             return contenido
-        except Exception as e:
+        except requests.exceptions.HTTPError as e:
             st.error(f"Error en la petición a la API: {e}")
+            # Mostrar contenido completo de la respuesta en caso de error HTTP para depurar
+            if e.response is not None:
+                st.write(f"Respuesta completa de error: {e.response.text}")
+            break
+        except Exception as e:
+            st.error(f"Error inesperado: {e}")
             break
     return None
 
@@ -79,7 +89,7 @@ Descripción funcional:
 {descripcion}
 """
     body = {
-        "model": "openrouter/openai/gpt-3.5-turbo",  # ← CORREGIDO
+        "model": "openrouter/openai/gpt-3.5-turbo",
         "messages": [
             {"role": "system", "content": "Eres un experto en QA y pruebas de software."},
             {"role": "user", "content": prompt}
@@ -211,3 +221,4 @@ if generar_clicked:
                     file_name="casos_prueba_testrail.csv",
                     mime="text/csv"
                 )
+
