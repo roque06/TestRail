@@ -49,7 +49,7 @@ Texto original:
 {texto_original}
 """
     body = {
-        "model": "gpt-3.5-turbo",
+      "model": "openrouter/openai/gpt-3.5-turbo",
         "messages": [
             {"role": "system", "content": "Eres un experto en QA y análisis funcional."},
             {"role": "user", "content": prompt}
