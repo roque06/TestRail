@@ -5,10 +5,12 @@ import io
 import pandas as pd
 import time
 
-# Leer la API KEY desde secrets.toml
+# Configuración de la página: debe ir primero
+st.set_page_config(page_title="Generador QA TestRail", layout="centered")
+
 API_KEY = st.secrets["OPENROUTER_API_KEY"]
 
-# Debug: muestra los primeros caracteres de la clave para confirmar que se lee bien
+# Mostrar parte del API_KEY (opcional, para debug, después de set_page_config)
 st.write(f"API_KEY leído: {API_KEY[:6]}... (oculto por seguridad)")
 
 TIPOS_VALIDOS = {"Functional", "Negative", "Performance", "Security", "Usability"}
@@ -31,14 +33,8 @@ def llamar_api_con_reintentos(body, max_reintentos=3):
                 time.sleep(1)
                 continue
             return contenido
-        except requests.exceptions.HTTPError as e:
-            st.error(f"Error en la petición a la API: {e}")
-            # Mostrar contenido completo de la respuesta en caso de error HTTP para depurar
-            if e.response is not None:
-                st.write(f"Respuesta completa de error: {e.response.text}")
-            break
         except Exception as e:
-            st.error(f"Error inesperado: {e}")
+            st.error(f"Error en la petición a la API: {e}")
             break
     return None
 
@@ -124,101 +120,3 @@ def limpiar_csv_crudo(csv_crudo, columnas_esperadas=6):
     for fila in reader:
         fila = [celda.strip() for celda in fila]
         if not fila or all(celda == "" for celda in fila):
-            continue
-        if [c.lower() for c in fila] == [c.lower() for c in encabezado]:
-            continue
-        if any("```" in celda for celda in fila):
-            continue
-        if len(fila) < columnas_esperadas:
-            filas_incompletas.append(fila)
-            fila += [""] * (columnas_esperadas - len(fila))
-
-        tipo = fila[4]
-        if tipo not in TIPOS_VALIDOS:
-            fila[4] = "Functional"
-
-        prioridad = fila[5]
-        if prioridad not in PRIORIDADES_VALIDAS:
-            fila[5] = "Medium"
-
-        if fila[1].strip() == "":
-            fila[1] = "Revisar precondición (vacía)"
-
-        filas_validas.append(fila)
-
-    output = io.StringIO()
-    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
-    writer.writerow(encabezado)
-    writer.writerows(filas_validas)
-    return output.getvalue(), filas_incompletas
-
-# ============ UI =============
-
-st.set_page_config(page_title="Generador QA TestRail", layout="centered")
-
-st.markdown("<h1 style='color:#006699;'>🧪 Generador de Escenarios QA</h1>", unsafe_allow_html=True)
-
-descripcion = st.text_area("✏️ Pega la descripción funcional aquí:", height=250)
-
-if "descripcion_refinada" not in st.session_state:
-    st.session_state["descripcion_refinada"] = ""
-
-refinar_clicked = st.button("🔍 Refinar descripción")
-generar_clicked = st.button("📄 Generar CSV para TestRail")
-
-if refinar_clicked:
-    if not descripcion.strip():
-        st.warning("Por favor pega una descripción para refinar.")
-    else:
-        with st.spinner("Refinando descripción..."):
-            refinado = refinar_descripcion(descripcion)
-            st.session_state["descripcion_refinada"] = refinado
-            if "Error:" in refinado:
-                st.error(refinado)
-            else:
-                st.success("Descripción refinada lista:")
-
-if st.session_state["descripcion_refinada"]:
-    with st.expander("✅ Mostrar descripción refinada"):
-        st.text_area("", st.session_state["descripcion_refinada"], height=250, key="refinado_text_area")
-
-if generar_clicked:
-    texto_para_generar = st.session_state["descripcion_refinada"] or descripcion
-
-    if not texto_para_generar.strip():
-        st.warning("Por favor ingresa o refina una descripción para generar escenarios.")
-    else:
-        with st.spinner("Generando casos de prueba..."):
-            resultado = generar_escenarios_csv(texto_para_generar)
-
-            if resultado:
-                encabezado = "Title,Preconditions,Steps,Expected Result,Type,Priority"
-                resultado_limpio = resultado.strip()
-
-                tiene_encabezado = resultado_limpio.lower().startswith(encabezado.lower())
-                if tiene_encabezado:
-                    csv_completo = resultado_limpio
-                else:
-                    csv_completo = encabezado + "\n" + resultado_limpio
-
-                csv_limpio, filas_incompletas = limpiar_csv_crudo(csv_completo)
-
-                if filas_incompletas:
-                    st.warning(f"⚠️ {len(filas_incompletas)} fila(s) tenían menos columnas de las esperadas y fueron completadas con espacios vacíos. Revísalas si es necesario.")
-
-                try:
-                    df = pd.read_csv(io.StringIO(csv_limpio), engine='python', on_bad_lines='warn')
-                    st.success("✅ CSV generado correctamente:")
-                    st.dataframe(df)
-                except Exception as e:
-                    st.error(f"Error al leer el CSV: {e}")
-
-                st.code(csv_limpio, language="csv")
-
-                st.download_button(
-                    label="📥 Descargar CSV",
-                    data=csv_limpio.encode('utf-8-sig'),
-                    file_name="casos_prueba_testrail.csv",
-                    mime="text/csv"
-                )
-
