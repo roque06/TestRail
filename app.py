@@ -6,7 +6,7 @@ import pandas as pd
 import time
 
 # Aquí pon tu clave fija para pruebas (NO subir a repos públicos con esta clave)
-API_KEY = "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"
+API_KEY = "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"
 
 TIPOS_VALIDOS = {"Functional", "Negative", "Performance", "Security", "Usability"}
 PRIORIDADES_VALIDAS = {"High", "Medium", "Low"}
