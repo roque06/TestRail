@@ -5,8 +5,8 @@ import io
 import pandas as pd
 import time
 
-# Aquí pon tu clave fija para pruebas (NO subir a repos públicos con esta clave)
-API_KEY = "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"
+# 🔐 Asegúrate de tener una clave válida de OpenRouter con acceso a GPT-3.5
+API_KEY = "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"
 
 TIPOS_VALIDOS = {"Functional", "Negative", "Performance", "Security", "Usability"}
 PRIORIDADES_VALIDAS = {"High", "Medium", "Low"}
@@ -20,6 +20,9 @@ def llamar_api_con_reintentos(body, max_reintentos=3):
     for intento in range(max_reintentos):
         try:
             response = requests.post(url, headers=headers, json=body)
+            if response.status_code == 401:
+                st.error("Error 401: Unauthorized. Revisa tu API Key o el modelo.")
+                return None
             response.raise_for_status()
             data = response.json()
             contenido = data['choices'][0]['message']['content'].strip()
@@ -30,7 +33,7 @@ def llamar_api_con_reintentos(body, max_reintentos=3):
             return contenido
         except Exception as e:
             st.error(f"Error en la petición a la API: {e}")
-            break
+            time.sleep(1)
     return None
 
 def refinar_descripcion(texto_original):
@@ -50,7 +53,7 @@ Texto original:
 {texto_original}
 """
     body = {
-        "model": "openrouter/openai/gpt-3.5-turbo",
+        "model": "openai/gpt-3.5-turbo",  # ✅ CORREGIDO
         "messages": [
             {"role": "system", "content": "Eres un experto en QA y análisis funcional."},
             {"role": "user", "content": prompt}
@@ -80,7 +83,7 @@ Descripción funcional:
 {descripcion}
 """
     body = {
-        "model": "openrouter/openai/gpt-3.5-turbo",
+        "model": "openai/gpt-3.5-turbo",  # ✅ CORREGIDO
         "messages": [
             {"role": "system", "content": "Eres un experto en QA y pruebas de software."},
             {"role": "user", "content": prompt}
